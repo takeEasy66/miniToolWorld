@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>恋爱 100 件事 - 管理员登录</title>
+  <style>
+    :root {
+      --bg: #fff8fb;
+      --panel: #ffffff;
+      --primary: #ff77b4;
+      --primary-dark: #e95e9f;
+      --text: #3d2b3a;
+      --muted: #8b6f84;
+      --border: #ffd6e8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: linear-gradient(180deg, #fff8fb 0%, #fef6ff 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .card {
+      width: min(560px, 95vw);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    h1, h2 { margin: 0 0 10px; color: var(--primary-dark); }
+    .field { display: grid; gap: 6px; margin-bottom: 10px; }
+    input, textarea, button {
+      font: inherit;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    button { cursor: pointer; background: #fff; }
+    button.primary { background: var(--primary); color: white; border-color: var(--primary); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .small { font-size: 12px; color: var(--muted); }
+    .hidden { display: none; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./app-config.js"></script>
+</head>
+<body>
+  <div class="card">
+    <h1>管理员登录</h1>
+    <p class="small">默认管理员：`y00416 / 123456`。首次登录必须修改密码。</p>
+
+    <h2>1) 管理员账号登录</h2>
+    <div class="field">
+      <label>用户名</label>
+      <input id="loginUser" type="text" placeholder="y00416" />
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <input id="loginPass" type="password" placeholder="123456" />
+    </div>
+    <div class="toolbar">
+      <button class="primary" id="btnLogin">登录</button>
+    </div>
+
+    <div id="cfgWrap" class="hidden" style="margin-top:12px;">
+      <h2>2) 云端连接配置（登录后可见）</h2>
+      <div class="field">
+        <label>Supabase URL</label>
+        <input id="cfgUrl" type="text" placeholder="https://xxx.supabase.co" />
+      </div>
+      <div class="field">
+        <label>Supabase ANON KEY</label>
+        <textarea id="cfgKey" rows="3" placeholder="粘贴 anon key"></textarea>
+      </div>
+      <div class="toolbar">
+        <button id="btnTestCfg">测试连接</button>
+      </div>
+      <p class="small">首次初始化：请先用默认管理员登录，再完成云端配置。</p>
+    </div>
+
+    <div id="changePassWrap" class="hidden" style="margin-top:12px;">
+      <h2>首次登录请先修改密码</h2>
+      <div class="field">
+        <label>新密码</label>
+        <input id="newPass1" type="password" placeholder="至少 6 位" />
+      </div>
+      <div class="field">
+        <label>确认新密码</label>
+        <input id="newPass2" type="password" placeholder="再次输入新密码" />
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="btnChangePass">修改并进入管理页</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_ADMIN_USER = "y00416";
+    const DEFAULT_ADMIN_PASS = "123456";
+    const CFG_KEY = "love100_supabase_cfg";
+    const ADMIN_SESSION_KEY = "love100_admin_session";
+
+    const state = {
+      cfg: { url: "", key: "" },
+      supabase: null,
+      pendingUser: null,
+      bootstrapAuthed: false
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function loadCfg() {
+      const txt = localStorage.getItem(CFG_KEY);
+      if (txt) {
+        try { state.cfg = JSON.parse(txt); } catch {}
+      }
+      if ((!state.cfg.url || !state.cfg.key) && window.LOVE100_CONFIG) {
+        state.cfg.url = state.cfg.url || (window.LOVE100_CONFIG.supabaseUrl || "");
+        state.cfg.key = state.cfg.key || (window.LOVE100_CONFIG.supabaseAnonKey || "");
+        if (state.cfg.url && state.cfg.key) saveCfg();
+      }
+      $("cfgUrl").value = state.cfg.url || "";
+      $("cfgKey").value = state.cfg.key || "";
+    }
+
+    function saveCfg() {
+      localStorage.setItem(CFG_KEY, JSON.stringify(state.cfg));
+    }
+
+    async function sha256(text) {
+      const msgUint8 = new TextEncoder().encode(text);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function connect() {
+      state.cfg.url = $("cfgUrl").value.trim();
+      state.cfg.key = $("cfgKey").value.trim();
+      if (!state.cfg.url || !state.cfg.key) {
+        alert("请先填写 Supabase URL 和 ANON KEY");
+        return false;
+      }
+      saveCfg();
+      state.supabase = supabase.createClient(state.cfg.url, state.cfg.key);
+      return true;
+    }
+
+    async function ensureDefaultAdmin() {
+      const { data, error } = await state.supabase
+        .from("admin_users")
+        .select("username")
+        .eq("username", DEFAULT_ADMIN_USER)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        const passHash = await sha256(DEFAULT_ADMIN_PASS);
+        const { error: insertError } = await state.supabase.from("admin_users").insert({
+          username: DEFAULT_ADMIN_USER,
+          password_hash: passHash,
+          must_change_password: true,
+          active: true
+        });
+        if (insertError) throw insertError;
+      }
+    }
+
+    async function testConfig() {
+      const ok = await connect();
+      if (!ok) return;
+      try {
+        await ensureDefaultAdmin();
+        alert("连接成功");
+      } catch (e) {
+        alert("连接失败：" + e.message);
+      }
+    }
+
+    function saveSession(username, passwordHash) {
+      const session = {
+        username,
+        token: passwordHash,
+        cfg: state.cfg,
+        expireAt: Date.now() + 7 * 24 * 60 * 60 * 1000
+      };
+      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+    }
+
+    async function login() {
+      const username = $("loginUser").value.trim();
+      const password = $("loginPass").value;
+      if (!username || !password) return alert("请输入用户名和密码");
+
+      // 没有云端配置时，先引导配置，不再做默认账号二次门槛
+      if (!state.cfg.url || !state.cfg.key) {
+        $("cfgWrap").classList.remove("hidden");
+        alert("请先完成云端配置并测试连接。你也可以在 app-config.js 里预置配置，避免重复初始化。");
+        return;
+      }
+
+      const ok = await connect();
+      if (!ok) return;
+      try {
+        await ensureDefaultAdmin();
+        const { data, error } = await state.supabase
+          .from("admin_users")
+          .select("username,password_hash,must_change_password,active")
+          .eq("username", username)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data || !data.active) return alert("用户不存在或已禁用");
+        const passHash = await sha256(password);
+        if (passHash !== data.password_hash) return alert("密码错误");
+        if (data.must_change_password) {
+          state.pendingUser = username;
+          $("changePassWrap").classList.remove("hidden");
+          return;
+        }
+        saveSession(username, data.password_hash);
+        location.href = "admin.html";
+      } catch (e) {
+        alert("登录失败：" + e.message);
+      }
+    }
+
+    async function changePasswordAndEnter() {
+      if (!state.pendingUser) return;
+      const p1 = $("newPass1").value;
+      const p2 = $("newPass2").value;
+      if (!p1 || p1.length < 6) return alert("新密码至少 6 位");
+      if (p1 !== p2) return alert("两次输入不一致");
+      const passHash = await sha256(p1);
+      const { error } = await state.supabase
+        .from("admin_users")
+        .update({ password_hash: passHash, must_change_password: false })
+        .eq("username", state.pendingUser);
+      if (error) return alert("修改失败：" + error.message);
+      saveSession(state.pendingUser, passHash);
+      location.href = "admin.html";
+    }
+
+    function bind() {
+      $("btnTestCfg").onclick = testConfig;
+      $("btnLogin").onclick = login;
+      $("btnChangePass").onclick = changePasswordAndEnter;
+    }
+
+    function init() {
+      loadCfg();
+      if (state.cfg.url && state.cfg.key) {
+        $("cfgWrap").classList.add("hidden");
+      }
+      bind();
+    }
+    init();
+  </script>
+</body>
+</html>

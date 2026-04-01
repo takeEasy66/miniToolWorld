@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>恋爱 100 件事打卡</title>
+  <style>
+    :root {
+      --bg: #fff8fb;
+      --panel: #ffffff;
+      --primary: #ff77b4;
+      --primary-dark: #e95e9f;
+      --text: #3d2b3a;
+      --muted: #8b6f84;
+      --ok: #38b27b;
+      --border: #ffd6e8;
+      --shadow: 0 10px 30px rgba(255, 119, 180, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: linear-gradient(180deg, #fff8fb 0%, #fef6ff 100%);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .header {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      color: var(--primary-dark);
+    }
+
+    .subline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .tab-btn {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
+      padding: 8px 14px;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    button, input[type="date"], input[type="text"], textarea {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      background: #fff;
+      color: var(--text);
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    button.primary:hover { background: var(--primary-dark); }
+    button.ghost { background: #fff; }
+
+    .stat {
+      margin-left: auto;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 12px;
+    }
+    .list-area {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 2px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card.done {
+      border-color: #9de3bf;
+      background: #f5fff9;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .tag {
+      font-size: 12px;
+      color: white;
+      background: var(--primary);
+      border-radius: 999px;
+      padding: 2px 8px;
+      white-space: nowrap;
+    }
+
+    .card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .note {
+      min-height: 56px;
+      resize: vertical;
+    }
+    .note[readonly] {
+      background: #f7f7f9;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .note-wrap {
+      position: relative;
+    }
+    .done-stamp {
+      position: absolute;
+      right: 10px;
+      top: 8px;
+      border: 2px solid #b5b5b5;
+      color: #8f8f8f;
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      transform: rotate(-12deg);
+      background: rgba(255, 255, 255, 0.75);
+      pointer-events: none;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.38);
+      display: none;
+      place-items: center;
+      z-index: 30;
+    }
+    .modal.open { display: grid; }
+
+    .modal-card {
+      width: min(680px, 95vw);
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .qr-wrap {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: #fff;
+      font-size: 12px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="./app-config.js"></script>
+</head>
+<body>
+  <div class="container">
+    <section class="header">
+      <h1>恋爱 100 件事打卡</h1>
+      <div class="subline">
+        <span id="boardPill" class="pill">打卡板：--</span>
+        <span id="daysPill" class="pill">在一起 0 天</span>
+      </div>
+      <div class="toolbar">
+        <button class="ghost" id="btnStartDate">设置恋爱开始日期</button>
+        <button class="ghost" id="btnAccessCode">访问码设置</button>
+        <button class="ghost" id="btnExportExcel">导出</button>
+        <button class="ghost" id="btnOnlyTodo">显示未完成</button>
+        <span class="stat" id="progress">0 / 100</span>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn" id="btnPageDaily">日常温情</button>
+        <button class="tab-btn" id="btnPageDate">约会出行</button>
+        <button class="tab-btn" id="btnPageDiy">创意DIY</button>
+        <button class="tab-btn" id="btnPageWarm">暖心陪伴</button>
+      </div>
+    </section>
+    <section class="list-area">
+      <section class="grid" id="cardGrid"></section>
+    </section>
+  </div>
+
+  <div class="modal" id="modalVerifyCode">
+    <div class="modal-card">
+      <h3>输入访问码</h3>
+      <p class="small">该打卡板已启用访问码，请输入访问码后继续。</p>
+      <div class="field">
+        <label>访问码</label>
+        <input id="verifyCodeInput" type="password" placeholder="请输入访问码" />
+      </div>
+      <div class="small" id="verifyCodeError" style="color:#d94b7c;min-height:18px;"></div>
+      <div class="toolbar">
+        <button class="primary" id="btnVerifyCodeOk">验证并进入</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalAccessSettings">
+    <div class="modal-card">
+      <h3>访问码设置</h3>
+      <div class="field">
+        <label><input id="accessEnabledCheckbox" type="checkbox" /> 启用访问码</label>
+      </div>
+      <div id="accessCodeFields">
+        <div class="field">
+          <label>新访问码</label>
+          <input id="newAccessCode1" type="password" placeholder="至少 4 位" />
+        </div>
+        <div class="field">
+          <label>确认访问码</label>
+          <input id="newAccessCode2" type="password" placeholder="再次输入访问码" />
+        </div>
+      </div>
+      <div class="small" id="accessSettingsError" style="color:#d94b7c;min-height:18px;"></div>
+      <div class="toolbar">
+        <button class="primary" id="btnSaveAccessSettings">保存</button>
+        <button id="btnCancelAccessSettings">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalStartDate">
+    <div class="modal-card">
+      <h3>设置恋爱起始日期</h3>
+      <div class="field">
+        <label>日期</label>
+        <input id="startDateInput" type="date" />
+      </div>
+      <div class="small" id="startDateError" style="color:#d94b7c;min-height:18px;"></div>
+      <div class="toolbar">
+        <button class="primary" id="btnSaveStartDate">保存</button>
+        <button id="btnCancelStartDate">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LOVE_ITEMS = [
+      "一起手牵手漫无目的地压马路","一起逛超市买菜，做一顿晚餐","雨天窝沙发看老电影，共享毛毯","一起养一盆绿植 / 宠物，轮流照顾","一起拼乐高 / 拼图，完成后摆家里","一起做早餐，周末赖床聊天","互相给对方剪指甲、吹头发","一起敷面膜、护肤放松","一起大扫除，分工做家务","睡前为对方读一段书 / 讲故事","一起刷牙，对着镜子搞怪","一起泡脚，边泡边看搞笑视频","给对方写小纸条，藏在 TA 常发现的地方","一起听同一首歌，分享耳机","一起在阳台看日出 / 日落","一起喝交杯式饮料 / 小酒","一起熬夜跨年，守岁到零点","一起拆快递，像拆盲盒一样开心","一起去楼下便利店买冰淇淋，边走边吃","一起看烟火，在人群中拥抱","一起堆雪人、打雪仗","一起在雨中漫步 / 狂奔","一起赏月、数星星、对流星许愿","一起靠窗边听雨声、发呆","什么都不做，静静拥抱十分钟",
+      "一起去游乐园，坐过山车、摩天轮","一起去海边，沙滩写名字、看浪","一起看演唱会 / 话剧 / 脱口秀","一起爬山，在山顶呐喊、看风景","一起野餐，准备对方爱吃的食物","一起去博物馆 / 美术馆 / 科技馆","一起坐城市观光巴士，看夜景","一起去果园 / 农场采摘水果","一起去逛宜家，规划未来的家","一起去滑冰 / 滑雪，互相搀扶","一起去寺庙 / 教堂，为彼此祈福","一起去看日出，等朝霞升起","一起去鬼屋，紧紧握住彼此的手","一起坐旋转木马，找回童真","一起去海底世界 / 海洋馆","一起去看雪，在雪中漫步","一起去露营，搭帐篷、看星星","一起短途旅行，住温馨民宿","一起坐一次飞机 / 船 / 火车去远方","一起跳上未知公交，随机下车探险","一起去 citywalk，逛没去过的街区","一起去打卡收藏的咖啡馆 / 小酒馆","一起去放风筝，让风筝飞得最高","一起去旧货市场，淘有故事的宝贝","一起去看球赛 / 比赛，为喜欢的队伍呐喊",
+      "一起 DIY 手工 / 陶艺，捏专属摆件","一起做情侣衫 / 情侣杯 / 情侣手机壳","一起拍 vlog，记录甜蜜日常","一起做手账，贴照片、写心情","一起制作相册 / 时间胶囊，约定未来打开","一起学做一道新菜，哪怕厨房混乱","一起种蔬菜 / 小花，记录生长过程","一起改造房间 / 书桌，布置小窝","一起画石膏娃娃 / 油画，互相评价","一起做蛋糕 / 饼干，为对方庆生","一起写未来愿望清单，贴在墙上","一起学一支舞，在家即兴跳","一起合唱一首歌，录下来保存","一起为对方搭配衣服、拍照","一起做美甲 / 染发，互相帮忙","一起做烛光晚餐，浪漫氛围拉满","一起做一次公益志愿者活动","一起拍一组情侣写真 / 自拍大片","一起做一次泡泡浴，放松身心","一起玩桌游 / 扑克牌，输赢都开心","一起喝醉一次（微醺即可），说真心话","一起修理电器 / 家具，体验动手乐趣","一起去 KTV 唱歌，跑调也没关系","一起去漂流 / 玩水，清凉一夏","一起去汗蒸 / 按摩，缓解疲惫",
+      "生病时细心照顾，不敷衍","难过时静静陪伴，给对方拥抱","一起去体检，关心彼此健康","一起制定学习 / 健身计划，互相督促","教对方一件你擅长的事，让 TA 觉得厉害","一起去对方的母校，回忆青春","一起和朋友聚餐，融入彼此圈子","一起为对方准备生日 / 纪念日惊喜","偷偷为对方买喜欢又舍不得的东西","互换角色一天，体验对方的日常","一起为布置小家出主意、买软装","给对方写一封手写信，表达爱意","上班时偷偷给对方点下午茶 / 外卖","给对方起专属昵称，在外人面前喊","一起在电梯里壁咚 / 亲吻，制造小浪漫","一起看恐怖片，在害怕时抱紧彼此","一起陪对方看 TA 喜欢的电影 / 综艺","一起去看海 / 湖边，只是静静吹风","一起去天安门看升国旗，感受庄严","一起去教堂 / 婚礼现场，憧憬未来","一起做一次深度沟通，聊梦想与恐惧","一起整理换季衣物，断舍离旧物","一起收藏一瓶酒，约定特殊日子开启","一起在午夜看星星，聊未来的小计划","一起完成这 100 件事，约定一辈子走下去"
+    ];
+
+    const CATEGORIES = [
+      [1, 25, "日常温情"], [26, 50, "约会出行"], [51, 75, "创意 DIY"], [76, 100, "暖心陪伴"]
+    ];
+
+    const state = {
+      boardId: "",
+      startDate: "",
+      accessCodeEnabled: false,
+      onlyTodo: false,
+      currentPage: "daily",
+      records: {},
+      sessionToken: "",
+      cfg: { url: "", key: "" }
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function getCategory(index) {
+      const no = index + 1;
+      const hit = CATEGORIES.find(([a, b]) => no >= a && no <= b);
+      return hit ? hit[2] : "恋爱小事";
+    }
+
+    function formatDate(d) {
+      const p = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    function calcDays(startDate) {
+      if (!startDate) return 0;
+      const start = new Date(startDate + "T00:00:00");
+      const now = new Date();
+      const ms = now - start;
+      return Math.max(1, Math.floor(ms / 86400000) + 1);
+    }
+
+    function randomBoardId() {
+      return "love-" + crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "").slice(0, 8);
+    }
+
+    function loadConfig() {
+      const txt = localStorage.getItem("love100_supabase_cfg");
+      if (txt) {
+        try { state.cfg = JSON.parse(txt); } catch {}
+      }
+      if ((!state.cfg.url || !state.cfg.key) && window.LOVE100_CONFIG) {
+        state.cfg.url = state.cfg.url || (window.LOVE100_CONFIG.supabaseUrl || "");
+        state.cfg.key = state.cfg.key || (window.LOVE100_CONFIG.supabaseAnonKey || "");
+        if (state.cfg.url && state.cfg.key) {
+          localStorage.setItem("love100_supabase_cfg", JSON.stringify(state.cfg));
+        }
+      }
+    }
+
+    function saveConfig() {
+      localStorage.setItem("love100_supabase_cfg", JSON.stringify(state.cfg));
+    }
+
+    function openModal(id) { $(id).classList.add("open"); }
+    function closeModal(id) { $(id).classList.remove("open"); }
+
+    function bootBoard() {
+      const url = new URL(location.href);
+      const boardFromUrl = url.searchParams.get("board");
+      // 每次优先使用 URL 中的 board，避免被本地历史值覆盖
+      state.boardId = boardFromUrl || randomBoardId();
+      if (!boardFromUrl) {
+        url.searchParams.set("board", state.boardId);
+        history.replaceState({}, "", url.toString());
+      }
+    }
+
+    function getFunctionUrl(name) {
+      return `${state.cfg.url}/functions/v1/${name}`;
+    }
+
+    function getSessionKey() {
+      return `love100_board_session_${state.boardId}`;
+    }
+
+    async function callFn(name, body) {
+      const res = await fetch(getFunctionUrl(name), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": state.cfg.key
+        },
+        body: JSON.stringify(body || {})
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `函数调用失败：${name}`);
+      return data;
+    }
+
+    async function connectSupabase() {
+      if (!state.cfg.url || !state.cfg.key) {
+        $("cardGrid").innerHTML = '<div class="small">缺少云端配置，请先在 app-config.js 填写。</div>';
+        return;
+      }
+      await ensureSessionAndLoad();
+    }
+
+    async function ensureSessionAndLoad() {
+      const localToken = localStorage.getItem(getSessionKey());
+      if (localToken) {
+        try {
+          await loadBoardData(localToken);
+          state.sessionToken = localToken;
+          return;
+        } catch (e) {
+          const msg = String(e?.message || e || "");
+          // 仅在会话确实失效时才回退到访问码输入，避免网络抖动导致反复输码
+          if (!(msg.includes("会话无效") || msg.includes("401"))) {
+            throw e;
+          }
+        }
+      }
+      let input = "";
+      while (true) {
+        try {
+          const login = await callFn("user_login_with_code", {
+            boardId: state.boardId,
+            accessCode: input
+          });
+          state.sessionToken = login.sessionToken;
+          localStorage.setItem(getSessionKey(), state.sessionToken);
+          await loadBoardData(state.sessionToken);
+          if (login.created && !state.accessCodeEnabled) {
+            openAccessSettingsModal(true);
+          }
+          break;
+        } catch (e) {
+          const msg = String(e.message || e);
+          if (msg.includes("需要访问码") || msg.includes("访问码错误")) {
+            input = await askAccessCode(msg.includes("访问码错误") ? "访问码错误，请重试" : "");
+            continue;
+          }
+          throw e;
+        }
+      }
+    }
+
+    async function loadBoardData(token) {
+      const data = await callFn("get_board_data", { sessionToken: token });
+      state.startDate = data.board.startDate;
+      state.accessCodeEnabled = !!data.board.accessCodeEnabled;
+      state.records = {};
+      (data.records || []).forEach((r) => { state.records[r.item_id] = r; });
+      renderCards();
+      refreshHeader();
+    }
+
+    async function changeAccessCode() {
+      if (!state.sessionToken) {
+        try {
+          await ensureSessionAndLoad();
+        } catch (e) {
+          return alert("请先完成访问认证");
+        }
+      }
+      openAccessSettingsModal(false);
+    }
+
+    function openAccessSettingsModal(forceEnable) {
+      $("accessEnabledCheckbox").checked = forceEnable ? true : state.accessCodeEnabled;
+      $("newAccessCode1").value = "";
+      $("newAccessCode2").value = "";
+      $("accessSettingsError").textContent = "";
+      updateAccessFieldsVisibility();
+      openModal("modalAccessSettings");
+    }
+
+    function updateAccessFieldsVisibility() {
+      $("accessCodeFields").style.display = $("accessEnabledCheckbox").checked ? "block" : "none";
+    }
+
+    async function saveAccessSettings() {
+      const enabled = $("accessEnabledCheckbox").checked;
+      const err = $("accessSettingsError");
+      err.textContent = "";
+      if (!enabled) {
+        await callFn("set_access_code", { sessionToken: state.sessionToken, enabled: false, accessCode: "" });
+        state.accessCodeEnabled = false;
+        closeModal("modalAccessSettings");
+        return;
+      }
+      const p1 = $("newAccessCode1").value.trim();
+      const p2 = $("newAccessCode2").value.trim();
+      if (!p1 || p1.length < 4) return (err.textContent = "访问码至少 4 位");
+      if (p1 !== p2) return (err.textContent = "两次输入不一致");
+      await callFn("set_access_code", { sessionToken: state.sessionToken, enabled: true, accessCode: p1 });
+      state.accessCodeEnabled = true;
+      closeModal("modalAccessSettings");
+    }
+
+    function askAccessCode(errorText = "") {
+      return new Promise((resolve) => {
+        $("verifyCodeInput").value = "";
+        $("verifyCodeError").textContent = errorText;
+        openModal("modalVerifyCode");
+        $("btnVerifyCodeOk").onclick = () => {
+          const v = $("verifyCodeInput").value.trim();
+          closeModal("modalVerifyCode");
+          resolve(v);
+        };
+      });
+    }
+
+    function refreshHeader() {
+      $("boardPill").textContent = "打卡板：" + state.boardId;
+      $("daysPill").textContent = "在一起 " + calcDays(state.startDate) + " 天";
+      const done = Object.values(state.records).filter((x) => x.completed).length;
+      $("progress").textContent = `${done} / ${LOVE_ITEMS.length}`;
+    }
+
+    function escapeHtml(s) {
+      return (s || "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m]));
+    }
+
+    function renderCards() {
+      const grid = $("cardGrid");
+      const html = LOVE_ITEMS.map((item, idx) => {
+        const no = idx + 1;
+        const page = no <= 25 ? "daily" : (no <= 50 ? "date" : (no <= 75 ? "diy" : "warm"));
+        if (page !== state.currentPage) return "";
+        const id = idx + 1;
+        const rec = state.records[id] || {};
+        if (state.onlyTodo && rec.completed) return "";
+        const done = !!rec.completed;
+        return `
+          <article class="card ${done ? "done" : ""}" data-id="${id}">
+            <div class="card-top">
+              <h3 class="card-title">${id}. ${escapeHtml(item)}</h3>
+              <span class="tag">${getCategory(idx)}</span>
+            </div>
+            <div class="note-wrap">
+              <textarea class="note" placeholder="备注（可选）" ${done ? "readonly" : ""}>${escapeHtml(rec.note || "")}</textarea>
+              ${done ? '<span class="done-stamp">已完成</span>' : ""}
+            </div>
+            <div class="toolbar">
+              ${done ? '<button class="ghost btn-cancel-done">取消完成</button>' : '<button class="primary btn-save">打卡完成</button>'}
+            </div>
+            <div class="small">${rec.updated_at ? "更新时间：" + new Date(rec.updated_at).toLocaleString() : "尚未打卡"}</div>
+          </article>`;
+      }).join("");
+      grid.innerHTML = html || '<div class="small">当前页暂无数据</div>';
+      bindCardEvents();
+      refreshHeader();
+    }
+
+    function bindCardEvents() {
+      document.querySelectorAll(".card").forEach((card) => {
+        const id = Number(card.dataset.id);
+        const noteEl = card.querySelector(".note");
+        const btnSave = card.querySelector(".btn-save");
+        if (btnSave) {
+          btnSave.onclick = async () => {
+            await saveOne(id, true, noteEl.value);
+          };
+        }
+        const btnCancel = card.querySelector(".btn-cancel-done");
+        if (btnCancel) {
+          btnCancel.onclick = async () => {
+            await saveOne(id, false, noteEl.value);
+          };
+        }
+      });
+    }
+
+    async function saveOne(itemId, completed, note) {
+      if (!state.sessionToken) return alert("请先完成访问认证");
+      try {
+        const payload = {
+          item_id: itemId,
+          title: LOVE_ITEMS[itemId - 1],
+          completed,
+          note: note || "",
+          updated_at: new Date().toISOString()
+        };
+        await callFn("upsert_checkin", { sessionToken: state.sessionToken, ...payload });
+        state.records[itemId] = payload;
+        renderCards();
+      } catch (e) {
+        alert("保存失败：" + e.message);
+      }
+    }
+
+    async function setStartDate() {
+      $("startDateInput").value = state.startDate || formatDate(new Date());
+      $("startDateError").textContent = "";
+      openModal("modalStartDate");
+    }
+
+    async function saveStartDate() {
+      const val = $("startDateInput").value;
+      if (!val) {
+        $("startDateError").textContent = "请选择日期";
+        return;
+      }
+      state.startDate = val;
+      if (state.sessionToken) await callFn("set_start_date", { sessionToken: state.sessionToken, startDate: val });
+      refreshHeader();
+      closeModal("modalStartDate");
+    }
+
+    async function exportExcel() {
+      const rows = LOVE_ITEMS.map((title, idx) => {
+        const id = idx + 1;
+        const r = state.records[id] || {};
+        return {
+          编号: id,
+          事项: title,
+          分类: getCategory(idx),
+          完成状态: r.completed ? "已完成" : "未完成",
+          备注: r.note || "",
+          更新时间: r.updated_at ? new Date(r.updated_at).toLocaleString() : ""
+        };
+      });
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "恋爱100件事");
+      XLSX.writeFile(wb, `恋爱100件事-${state.boardId}.xlsx`);
+    }
+
+    function switchPage(page) {
+      state.currentPage = page;
+      $("btnPageDaily").classList.toggle("active", page === "daily");
+      $("btnPageDate").classList.toggle("active", page === "date");
+      $("btnPageDiy").classList.toggle("active", page === "diy");
+      $("btnPageWarm").classList.toggle("active", page === "warm");
+      renderCards();
+    }
+
+    function bindTopButtons() {
+      $("btnPageDaily").onclick = () => switchPage("daily");
+      $("btnPageDate").onclick = () => switchPage("date");
+      $("btnPageDiy").onclick = () => switchPage("diy");
+      $("btnPageWarm").onclick = () => switchPage("warm");
+      $("btnStartDate").onclick = setStartDate;
+      $("btnAccessCode").onclick = changeAccessCode;
+      $("btnExportExcel").onclick = exportExcel;
+      $("accessEnabledCheckbox").onchange = updateAccessFieldsVisibility;
+      $("btnSaveAccessSettings").onclick = saveAccessSettings;
+      $("btnCancelAccessSettings").onclick = () => closeModal("modalAccessSettings");
+      $("btnSaveStartDate").onclick = saveStartDate;
+      $("btnCancelStartDate").onclick = () => closeModal("modalStartDate");
+      $("btnOnlyTodo").onclick = () => {
+        state.onlyTodo = !state.onlyTodo;
+        $("btnOnlyTodo").textContent = state.onlyTodo ? "显示全部" : "显示未完成";
+        renderCards();
+      };
+    }
+
+    async function init() {
+      loadConfig();
+      bootBoard();
+      bindTopButtons();
+      switchPage("daily");
+      $("cardGrid").innerHTML = '<div class="small">正在进行访问认证...</div>';
+      await connectSupabase();
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>恋爱100件事打卡工具管理</title>
+  <style>
+    :root {
+      --bg: #fff8fb;
+      --panel: #ffffff;
+      --primary: #ff77b4;
+      --primary-dark: #e95e9f;
+      --text: #3d2b3a;
+      --muted: #8b6f84;
+      --border: #ffd6e8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: linear-gradient(180deg, #fff8fb 0%, #fef6ff 100%);
+      color: var(--text);
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 16px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    h1, h2 { margin: 0 0 10px; color: var(--primary-dark); }
+    .field { display: grid; gap: 6px; margin-bottom: 10px; }
+    input, textarea, button {
+      font: inherit;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    button { cursor: pointer; background: #fff; }
+    button.primary { background: var(--primary); color: white; border-color: var(--primary); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .small { font-size: 12px; color: var(--muted); }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .rightbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: #fff;
+      font-size: 12px;
+      display: inline-block;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    .qr-box {
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      width: fit-content;
+      background: #fff;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script src="./app-config.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="topbar">
+        <h1>恋爱100件事打卡工具管理</h1>
+        <div class="rightbar">
+          <span class="pill" id="authPill">--</span>
+          <button id="btnLogout">退出登录</button>
+        </div>
+      </div>
+      <p class="small">你已通过管理员登录页验证。这里不绑定固定 board，可按需生成用户链接。</p>
+    </div>
+
+    <div class="card">
+      <h2>1) 生成用户链接 / 二维码</h2>
+      <p class="small">每次生成一个新 boardId，并自动生成 8 位访问码（用户登录后可修改）。</p>
+      <div class="toolbar">
+        <button class="primary" id="btnGenerateLink">生成新链接</button>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>用户链接</label>
+        <input id="shareLink" type="text" readonly />
+      </div>
+      <div class="field">
+        <label>默认访问码（8位）</label>
+        <input id="shareCode" type="text" readonly />
+      </div>
+      <div class="field">
+        <label>二维码（微信 / 系统相机可扫）</label>
+        <div class="qr-box">
+          <img id="qrImg" alt="用户打卡链接二维码" width="220" height="220" style="display:block;max-width:100%;height:auto;background:#fff;" />
+        </div>
+        <p class="small" id="qrHint" style="margin-top:6px;"></p>
+      </div>
+      <div class="toolbar">
+        <button id="btnDownloadQr">下载二维码</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const CFG_KEY = "love100_supabase_cfg";
+    const ADMIN_SESSION_KEY = "love100_admin_session";
+
+    const state = {
+      cfg: { url: "", key: "" },
+      supabase: null,
+      session: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function loadCfg() {
+      const txt = localStorage.getItem(CFG_KEY);
+      if (txt) {
+        try { state.cfg = JSON.parse(txt); } catch {}
+      }
+      if ((!state.cfg.url || !state.cfg.key) && window.LOVE100_CONFIG) {
+        state.cfg.url = state.cfg.url || (window.LOVE100_CONFIG.supabaseUrl || "");
+        state.cfg.key = state.cfg.key || (window.LOVE100_CONFIG.supabaseAnonKey || "");
+        if (state.cfg.url && state.cfg.key) saveCfg();
+      }
+    }
+
+    function saveCfg() {
+      localStorage.setItem(CFG_KEY, JSON.stringify(state.cfg));
+    }
+
+    function loadSession() {
+      const txt = localStorage.getItem(ADMIN_SESSION_KEY);
+      if (!txt) return null;
+      try { return JSON.parse(txt); } catch { return null; }
+    }
+
+    async function connect() {
+      if (!state.cfg.url || !state.cfg.key) {
+        alert("请先填写 Supabase URL 和 ANON KEY");
+        return false;
+      }
+      state.supabase = supabase.createClient(state.cfg.url, state.cfg.key);
+      return true;
+    }
+
+    async function callFn(name, body) {
+      const res = await fetch(`${state.cfg.url}/functions/v1/${name}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": state.cfg.key
+        },
+        body: JSON.stringify(body || {})
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `函数调用失败：${name}`);
+      return data;
+    }
+
+    async function verifySession() {
+      const s = loadSession();
+      if (!s || !s.username || !s.token || !s.expireAt) return false;
+      if (Date.now() > s.expireAt) return false;
+      state.session = s;
+      state.cfg = s.cfg || state.cfg;
+      const ok = await connect();
+      if (!ok) return false;
+      const { data, error } = await state.supabase
+        .from("admin_users")
+        .select("username,password_hash,must_change_password,active")
+        .eq("username", s.username)
+        .maybeSingle();
+      if (error || !data || !data.active) return false;
+      if (data.must_change_password) {
+        alert("该账号还未完成首次改密，请先在登录页完成。");
+        return false;
+      }
+      if (s.token !== data.password_hash) return false;
+      return true;
+    }
+
+    function renderQrDataUrl(text) {
+      return new Promise((resolve, reject) => {
+        if (typeof window.QRCode === "undefined" || typeof window.QRCode.toDataURL !== "function") {
+          reject(new Error("二维码库未加载，请检查网络或刷新页面"));
+          return;
+        }
+        window.QRCode.toDataURL(
+          text,
+          {
+            width: 220,
+            margin: 2,
+            color: { dark: "#000000", light: "#ffffff" },
+            errorCorrectionLevel: "M"
+          },
+          (err, url) => (err ? reject(err) : resolve(url))
+        );
+      });
+    }
+
+    async function generateUserLink() {
+      const result = await callFn("create_board_with_code", {});
+      const boardId = result.boardId;
+      const accessCode = result.accessCode;
+      const userUrl = new URL(location.href);
+      userUrl.pathname = userUrl.pathname.replace(/admin\.html$/, "index.html");
+      userUrl.searchParams.set("board", boardId);
+      const link = userUrl.toString();
+      $("shareLink").value = link;
+      $("shareCode").value = accessCode;
+      $("qrHint").textContent = "";
+      try {
+        const dataUrl = await renderQrDataUrl(link);
+        $("qrImg").src = dataUrl;
+        $("qrImg").dataset.downloadUrl = dataUrl;
+        if (/^https?:\/\/localhost/i.test(link) || /^https?:\/\/127\.0\.0\.1/i.test(link)) {
+          $("qrHint").textContent =
+            "当前为本地地址，他人手机扫码可能无法打开。部署到 GitHub Pages 等公网后，再生成链接即可正常扫码。";
+        }
+      } catch (e) {
+        $("qrImg").removeAttribute("src");
+        alert("二维码生成失败：" + (e && e.message ? e.message : String(e)));
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      location.href = "admin-login.html";
+    }
+
+    function bind() {
+      $("btnGenerateLink").onclick = generateUserLink;
+      $("btnLogout").onclick = logout;
+      $("btnDownloadQr").onclick = () => {
+        const url = $("qrImg").dataset.downloadUrl || $("qrImg").src;
+        if (!url || !url.startsWith("data:image")) {
+          alert("请先生成用户链接以生成二维码");
+          return;
+        }
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `恋爱100件事二维码-${Date.now()}.png`;
+        a.click();
+      };
+    }
+
+    async function init() {
+      loadCfg();
+      const ok = await verifySession();
+      if (!ok) {
+        location.href = "admin-login.html";
+        return;
+      }
+      $("authPill").textContent = state.session.username;
+      bind();
+    }
+    init();
+  </script>
+</body>
+</html>
