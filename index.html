@@ -87,26 +87,32 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
+      min-width: 0;
     }
     .tabs::-webkit-scrollbar { display: none; }
 
     .todo-row {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       gap: 8px;
       margin-top: 6px;
+      min-width: 0;
     }
 
     .tabs-right {
+      margin-left: auto;
       display: flex;
       gap: 8px;
       align-items: center;
       white-space: nowrap;
+      min-width: 0;
+      flex: 0 0 auto;
     }
 
     .tabs-group {
       flex: 0 0 auto;
+      min-width: auto;
     }
     .tab-btn {
       border: 1px solid var(--border);
@@ -139,8 +145,8 @@
       border: 0;
       background: transparent;
       color: var(--text);
-      padding: 6px 10px;
-      font-size: 12px;
+      padding: clamp(4px, 1.8vw, 6px) clamp(7px, 2.4vw, 10px);
+      font-size: clamp(10px, 2.8vw, 12px);
       line-height: 1;
       cursor: pointer;
       white-space: nowrap;
@@ -153,7 +159,7 @@
       border-left: 1px solid var(--border);
     }
     #todoToggle {
-      margin-left: auto; /* 放到下面一排按键最右边 */
+      margin-left: 0;
     }
 
     button, input[type="date"], input[type="text"], textarea {
@@ -181,6 +187,8 @@
     .stat {
       font-weight: 700;
       color: var(--primary-dark);
+      font-size: clamp(10px, 2.8vw, 12px);
+      line-height: 1;
     }
 
     .grid {
@@ -400,9 +408,9 @@
     .pill {
       border: 1px solid var(--border);
       border-radius: 999px;
-      padding: 4px 10px;
+      padding: clamp(3px, 1.3vw, 4px) clamp(8px, 2.2vw, 10px);
       background: #fff;
-      font-size: 12px;
+      font-size: clamp(10px, 2.8vw, 12px);
     }
 
     .days-num {
@@ -417,7 +425,7 @@
 
       .toolbar { gap: 6px; }
       .header .toolbar button { padding: 5px 8px; font-size: 12px; }
-      .stat { font-size: 13px; }
+      .stat { font-size: 12px; }
 
       /* 分类 + 未完成/全部：不要换行，宁可横滑 */
       .tabs {
@@ -425,6 +433,9 @@
       }
       .tab-btn { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
       .seg-btn { padding: 6px 8px; font-size: 12px; }
+      .tabs-right { gap: 6px; }
+      .pill { padding: 3px 8px; }
+      .stat { font-size: 12px; }
 
       /* 卡片单列、图片高度缩小，减少需要滚动的距离 */
       .grid { grid-template-columns: 1fr; gap: 10px; }
@@ -469,10 +480,7 @@
           <button class="seg-btn" id="btnTodoIncomplete" type="button">未完成</button>
           <button class="seg-btn" id="btnTodoAll" type="button">全部</button>
         </div>
-        <div class="tabs-right">
-          <span id="daysPill" class="pill">在一起 <span class="days-num">0</span> 天</span>
-          <span class="stat" id="progress">0 / 100</span>
-        </div>
+        <span id="daysPill" class="pill">在一起 <span class="days-num">0</span> 天</span>
       </div>
       <div class="tabs">
         <div class="seg-toggle tabs-group">
@@ -480,6 +488,9 @@
           <button class="seg-btn" id="btnPageDate" type="button">约会出行</button>
           <button class="seg-btn" id="btnPageDiy" type="button">创意DIY</button>
           <button class="seg-btn" id="btnPageWarm" type="button">暖心陪伴</button>
+        </div>
+        <div class="tabs-right">
+          <span class="stat" id="progress">0 / 100</span>
         </div>
       </div>
     </section>
