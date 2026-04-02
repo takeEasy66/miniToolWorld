@@ -85,6 +85,24 @@
       align-items: center;
       margin-top: 6px;
     }
+
+    .todo-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 6px;
+    }
+
+    .tabs-right {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .tabs-group {
+      flex: 0 0 auto;
+    }
     .tab-btn {
       border: 1px solid var(--border);
       border-radius: 999px;
@@ -116,7 +134,7 @@
       border: 0;
       background: transparent;
       color: var(--text);
-      padding: 6px 12px;
+      padding: 6px 10px;
       font-size: 12px;
       line-height: 1;
       cursor: pointer;
@@ -156,7 +174,6 @@
     button.ghost { background: #fff; }
 
     .stat {
-      margin-left: auto;
       font-weight: 700;
       color: var(--primary-dark);
     }
@@ -221,16 +238,90 @@
     }
 
     .note {
-      min-height: 56px;
-      resize: vertical;
+      min-height: 1.8em; /* 默认接近一行（JS 里会在输入时扩展） */
+      height: 1.8em;
+      resize: none; /* 通过 JS 自动扩展 */
+      overflow: hidden;
+      line-height: 1.4;
+      white-space: nowrap; /* 默认只展示一行 */
+      overflow-x: hidden;
+      font-size: 12px;
+      padding: 4px 8px;
     }
     .note[readonly] {
       background: #f7f7f9;
       color: #666;
       cursor: not-allowed;
+      resize: none;
+      white-space: nowrap;
     }
     .note-wrap {
       position: relative;
+    }
+
+    /* 顶部功能：图片按钮 */
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .icon-btn img {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+
+    /* 列表右上角筛选卡片 */
+    .list-area {
+      position: relative;
+    }
+    .filter-card {
+      position: relative;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      pointer-events: auto;
+      margin: 6px 0 10px auto; /* 第二排，不与列表重叠 */
+      width: fit-content;
+    }
+    .filter-card .seg-toggle {
+      border-radius: 999px;
+    }
+    .filter-card .seg-btn {
+      padding: 8px 14px; /* 提高可点击面积 */
+      font-size: 12px;
+    }
+
+    .actions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .actions-list button {
+      width: 100%;
+      text-align: left;
+    }
+
+    /* 卡片内按钮与顶部 tab-btn 尺寸一致 */
+    .card .toolbar {
+      flex-wrap: nowrap;
+    }
+    .card .toolbar button {
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
     }
     .done-stamp {
       position: absolute;
@@ -249,7 +340,12 @@
 
     .small {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .note::placeholder {
+      font-size: 11px; /* 与事件/说明文案接近 */
     }
 
     .modal {
@@ -292,6 +388,11 @@
       font-size: 12px;
     }
 
+    .days-num {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
     /* 移动端：尽量减少首屏高度、避免按钮换行 */
     @media (max-width: 480px) {
       h1 { font-size: 20px; margin-bottom: 8px; }
@@ -310,12 +411,29 @@
       }
       .tabs::-webkit-scrollbar { display: none; }
       .tab-btn { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
-      .seg-btn { padding: 6px 10px; font-size: 12px; }
+      .seg-btn { padding: 6px 8px; font-size: 12px; }
 
       /* 卡片单列、图片高度缩小，减少需要滚动的距离 */
       .grid { grid-template-columns: 1fr; gap: 10px; }
       .card img { height: 120px; }
       .card { padding: 10px; border-radius: 12px; }
+
+      .filter-card {
+        padding: 6px;
+        margin: 6px 0 10px auto;
+      }
+
+      /* 备注：一行起步，自动扩展时允许高度变化 */
+      .note {
+        min-height: 1.7em;
+        height: 1.7em;
+      }
+
+      /* 卡片按钮在竖屏上更适合点 */
+      .card .toolbar button {
+        padding: 6px 10px;
+        width: 100%;
+      }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -326,22 +444,29 @@
     <section class="header">
       <div class="title-row">
         <h1>恋爱 100 件事打卡</h1>
-        <span id="daysPill" class="pill">在一起 0 天</span>
+        <button class="icon-btn" id="btnActions" type="button" aria-label="功能">
+          <img
+            alt="功能"
+            src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M4%207h16%27%20stroke%3D%27%23ff77b4%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27/%3E%3Cpath%20d%3D%27M4%2012h16%27%20stroke%3D%27%23ff77b4%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27/%3E%3Cpath%20d%3D%27M4%2017h16%27%20stroke%3D%27%23ff77b4%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27/%3E%3C/svg%3E"
+          />
+        </button>
       </div>
-      <div class="toolbar">
-        <button class="ghost" id="btnStartDate">设置恋爱开始日期</button>
-        <button class="ghost" id="btnAccessCode">访问码设置</button>
-        <button class="ghost" id="btnExportExcel">导出</button>
-        <span class="stat" id="progress">0 / 100</span>
-      </div>
-      <div class="tabs">
-        <button class="tab-btn" id="btnPageDaily">日常温情</button>
-        <button class="tab-btn" id="btnPageDate">约会出行</button>
-        <button class="tab-btn" id="btnPageDiy">创意DIY</button>
-        <button class="tab-btn" id="btnPageWarm">暖心陪伴</button>
+      <div class="todo-row">
         <div class="seg-toggle" id="todoToggle" aria-label="未完成/全部切换">
           <button class="seg-btn" id="btnTodoIncomplete" type="button">未完成</button>
           <button class="seg-btn" id="btnTodoAll" type="button">全部</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <div class="seg-toggle tabs-group">
+          <button class="seg-btn" id="btnPageDaily" type="button">日常温情</button>
+          <button class="seg-btn" id="btnPageDate" type="button">约会出行</button>
+          <button class="seg-btn" id="btnPageDiy" type="button">创意DIY</button>
+          <button class="seg-btn" id="btnPageWarm" type="button">暖心陪伴</button>
+        </div>
+        <div class="tabs-right">
+          <span id="daysPill" class="pill">在一起 <span class="days-num">0</span> 天</span>
+          <span class="stat" id="progress">0 / 100</span>
         </div>
       </div>
     </section>
@@ -404,6 +529,20 @@
     </div>
   </div>
 
+  <div class="modal" id="modalActions">
+    <div class="modal-card" style="width: min(360px, 95vw);">
+      <h3>功能</h3>
+      <div class="actions-list">
+        <button class="ghost" id="btnActionAccessCode" type="button">访问码设置</button>
+        <button class="ghost" id="btnActionStartDate" type="button">恋爱开始日期</button>
+        <button class="ghost" id="btnActionExportExcel" type="button">导出</button>
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="btnCloseActions" type="button">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const LOVE_ITEMS = [
       "一起手牵手漫无目的地压马路","一起逛超市买菜，做一顿晚餐","雨天窝沙发看老电影，共享毛毯","一起养一盆绿植 / 宠物，轮流照顾","一起拼乐高 / 拼图，完成后摆家里","一起做早餐，周末赖床聊天","互相给对方剪指甲、吹头发","一起敷面膜、护肤放松","一起大扫除，分工做家务","睡前为对方读一段书 / 讲故事","一起刷牙，对着镜子搞怪","一起泡脚，边泡边看搞笑视频","给对方写小纸条，藏在 TA 常发现的地方","一起听同一首歌，分享耳机","一起在阳台看日出 / 日落","一起喝交杯式饮料 / 小酒","一起熬夜跨年，守岁到零点","一起拆快递，像拆盲盒一样开心","一起去楼下便利店买冰淇淋，边走边吃","一起看烟火，在人群中拥抱","一起堆雪人、打雪仗","一起在雨中漫步 / 狂奔","一起赏月、数星星、对流星许愿","一起靠窗边听雨声、发呆","什么都不做，静静拥抱十分钟",
@@ -419,6 +558,7 @@
     const state = {
       boardId: "",
       startDate: "",
+      startDatePrompted: false,
       accessCodeEnabled: false,
       onlyTodo: false,
       currentPage: "daily",
@@ -562,6 +702,9 @@
       (data.records || []).forEach((r) => { state.records[r.item_id] = r; });
       renderCards();
       refreshHeader();
+
+      updateActionsMenuVisibility();
+      maybeAutoAskStartDate();
     }
 
     async function changeAccessCode() {
@@ -620,8 +763,23 @@
       });
     }
 
+    function updateActionsMenuVisibility() {
+      const startBtn = $("btnActionStartDate");
+      if (!startBtn) return;
+      // 已经设置过开始日期后，后续无需再设置 -> 隐藏该入口
+      startBtn.style.display = state.startDate ? "none" : "block";
+    }
+
+    function maybeAutoAskStartDate() {
+      if (state.startDatePrompted) return;
+      if (state.startDate) return;
+      state.startDatePrompted = true;
+      openModal("modalStartDate");
+    }
+
     function refreshHeader() {
-      $("daysPill").textContent = "在一起 " + calcDays(state.startDate) + " 天";
+      const days = calcDays(state.startDate);
+      $("daysPill").innerHTML = `在一起 <span class="days-num">${days}</span> 天`;
       const done = Object.values(state.records).filter((x) => x.completed).length;
       $("progress").textContent = `${done} / ${LOVE_ITEMS.length}`;
     }
@@ -647,13 +805,13 @@
               <span class="tag">${getCategory(idx)}</span>
             </div>
             <div class="note-wrap">
-              <textarea class="note" placeholder="备注（可选）" ${done ? "readonly" : ""}>${escapeHtml(rec.note || "")}</textarea>
+              <textarea class="note" placeholder="备注【可选】" ${done ? "readonly" : ""}>${escapeHtml(rec.note || "")}</textarea>
               ${done ? '<span class="done-stamp">已完成</span>' : ""}
             </div>
             <div class="toolbar">
-              ${done ? '<button class="ghost btn-cancel-done">取消完成</button>' : '<button class="primary btn-save">打卡完成</button>'}
+              ${done ? '<button class="ghost btn-cancel-done">取消</button>' : '<button class="primary btn-save">打卡</button>'}
             </div>
-            <div class="small">${rec.updated_at ? "更新时间：" + new Date(rec.updated_at).toLocaleString() : "尚未打卡"}</div>
+            ${rec.updated_at ? '<div class="small">更新时间：' + new Date(rec.updated_at).toLocaleString() + "</div>" : ""}
           </article>`;
       }).join("");
       grid.innerHTML = html || '<div class="small">当前页暂无数据</div>';
@@ -665,6 +823,27 @@
       document.querySelectorAll(".card").forEach((card) => {
         const id = Number(card.dataset.id);
         const noteEl = card.querySelector(".note");
+
+        // 备注：默认只显示一行；未完成状态下输入后自动扩展（不需要拖拽）
+        if (noteEl) {
+          const minHeight = window.getComputedStyle(noteEl).minHeight || "1.8em";
+          noteEl.style.height = minHeight;
+          noteEl.style.overflowY = "hidden";
+          noteEl.style.whiteSpace = "nowrap";
+
+          if (!noteEl.hasAttribute("readonly")) {
+            const maxH = 160; // px
+            const resize = () => {
+              noteEl.style.whiteSpace = "normal";
+              noteEl.style.height = "auto";
+              const h = Math.min(noteEl.scrollHeight, maxH);
+              noteEl.style.height = h + "px";
+              noteEl.style.overflowY = noteEl.scrollHeight > maxH ? "auto" : "hidden";
+            };
+            noteEl.addEventListener("input", resize);
+          }
+        }
+
         const btnSave = card.querySelector(".btn-save");
         if (btnSave) {
           btnSave.onclick = async () => {
@@ -713,6 +892,8 @@
       state.startDate = val;
       if (state.sessionToken) await callFn("set_start_date", { sessionToken: state.sessionToken, startDate: val });
       refreshHeader();
+      state.startDatePrompted = true;
+      updateActionsMenuVisibility();
       closeModal("modalStartDate");
     }
 
@@ -749,9 +930,22 @@
       $("btnPageDate").onclick = () => switchPage("date");
       $("btnPageDiy").onclick = () => switchPage("diy");
       $("btnPageWarm").onclick = () => switchPage("warm");
-      $("btnStartDate").onclick = setStartDate;
-      $("btnAccessCode").onclick = changeAccessCode;
-      $("btnExportExcel").onclick = exportExcel;
+
+      $("btnActions").onclick = () => openModal("modalActions");
+      $("btnCloseActions").onclick = () => closeModal("modalActions");
+      $("btnActionAccessCode").onclick = () => {
+        closeModal("modalActions");
+        changeAccessCode();
+      };
+      $("btnActionStartDate").onclick = () => {
+        closeModal("modalActions");
+        setStartDate();
+      };
+      $("btnActionExportExcel").onclick = () => {
+        closeModal("modalActions");
+        exportExcel();
+      };
+
       $("accessEnabledCheckbox").onchange = updateAccessFieldsVisibility;
       $("btnSaveAccessSettings").onclick = saveAccessSettings;
       $("btnCancelAccessSettings").onclick = () => closeModal("modalAccessSettings");
