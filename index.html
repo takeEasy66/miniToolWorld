@@ -84,18 +84,23 @@
       gap: 6px;
       align-items: center;
       margin-top: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
+    .tabs::-webkit-scrollbar { display: none; }
 
     .todo-row {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
       margin-top: 6px;
     }
 
     .tabs-right {
-      margin-left: auto;
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
       white-space: nowrap;
     }
@@ -417,11 +422,7 @@
       /* 分类 + 未完成/全部：不要换行，宁可横滑 */
       .tabs {
         flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
       }
-      .tabs::-webkit-scrollbar { display: none; }
       .tab-btn { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
       .seg-btn { padding: 6px 8px; font-size: 12px; }
 
@@ -444,7 +445,7 @@
       /* 卡片按钮在竖屏上更适合点 */
       .card .toolbar button {
         padding: 6px 10px;
-        width: 100%;
+        width: auto;
       }
     }
   </style>
@@ -468,6 +469,10 @@
           <button class="seg-btn" id="btnTodoIncomplete" type="button">未完成</button>
           <button class="seg-btn" id="btnTodoAll" type="button">全部</button>
         </div>
+        <div class="tabs-right">
+          <span id="daysPill" class="pill">在一起 <span class="days-num">0</span> 天</span>
+          <span class="stat" id="progress">0 / 100</span>
+        </div>
       </div>
       <div class="tabs">
         <div class="seg-toggle tabs-group">
@@ -475,10 +480,6 @@
           <button class="seg-btn" id="btnPageDate" type="button">约会出行</button>
           <button class="seg-btn" id="btnPageDiy" type="button">创意DIY</button>
           <button class="seg-btn" id="btnPageWarm" type="button">暖心陪伴</button>
-        </div>
-        <div class="tabs-right">
-          <span id="daysPill" class="pill">在一起 <span class="days-num">0</span> 天</span>
-          <span class="stat" id="progress">0 / 100</span>
         </div>
       </div>
     </section>
