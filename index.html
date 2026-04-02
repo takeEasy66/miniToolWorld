@@ -43,6 +43,9 @@
       border-radius: 18px;
       padding: 18px;
       box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 15;
     }
 
     h1 {
@@ -287,6 +290,32 @@
       padding: 4px 10px;
       background: #fff;
       font-size: 12px;
+    }
+
+    /* 移动端：尽量减少首屏高度、避免按钮换行 */
+    @media (max-width: 480px) {
+      h1 { font-size: 20px; margin-bottom: 8px; }
+      .header { padding: 12px 12px; border-radius: 16px; }
+
+      .toolbar { gap: 6px; }
+      .header .toolbar button { padding: 5px 8px; font-size: 12px; }
+      .stat { font-size: 13px; }
+
+      /* 分类 + 未完成/全部：不要换行，宁可横滑 */
+      .tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tab-btn { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+      .seg-btn { padding: 6px 10px; font-size: 12px; }
+
+      /* 卡片单列、图片高度缩小，减少需要滚动的距离 */
+      .grid { grid-template-columns: 1fr; gap: 10px; }
+      .card img { height: 120px; }
+      .card { padding: 10px; border-radius: 12px; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
