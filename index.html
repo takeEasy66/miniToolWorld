@@ -51,6 +51,16 @@
       color: var(--primary-dark);
     }
 
+    .title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .title-row h1 {
+      margin: 0;
+    }
+
     .subline {
       display: flex;
       flex-wrap: wrap;
@@ -63,26 +73,61 @@
     .toolbar {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
     }
     .tabs {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     .tab-btn {
       border: 1px solid var(--border);
       border-radius: 999px;
       background: #fff;
       color: var(--text);
-      padding: 8px 14px;
+      padding: 6px 10px;
+      font-size: 12px;
     }
     .tab-btn.active {
       background: var(--primary);
       color: #fff;
       border-color: var(--primary);
+    }
+
+    .header .toolbar button {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    /* 未完成/全部左右切换按钮 */
+    .seg-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .seg-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      padding: 6px 12px;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .seg-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .seg-btn + .seg-btn {
+      border-left: 1px solid var(--border);
+    }
+    #todoToggle {
+      margin-left: auto; /* 放到下面一排按键最右边 */
     }
 
     button, input[type="date"], input[type="text"], textarea {
@@ -250,16 +295,14 @@
 <body>
   <div class="container">
     <section class="header">
-      <h1>恋爱 100 件事打卡</h1>
-      <div class="subline">
-        <span id="boardPill" class="pill">打卡板：--</span>
+      <div class="title-row">
+        <h1>恋爱 100 件事打卡</h1>
         <span id="daysPill" class="pill">在一起 0 天</span>
       </div>
       <div class="toolbar">
         <button class="ghost" id="btnStartDate">设置恋爱开始日期</button>
         <button class="ghost" id="btnAccessCode">访问码设置</button>
         <button class="ghost" id="btnExportExcel">导出</button>
-        <button class="ghost" id="btnOnlyTodo">显示未完成</button>
         <span class="stat" id="progress">0 / 100</span>
       </div>
       <div class="tabs">
@@ -267,6 +310,10 @@
         <button class="tab-btn" id="btnPageDate">约会出行</button>
         <button class="tab-btn" id="btnPageDiy">创意DIY</button>
         <button class="tab-btn" id="btnPageWarm">暖心陪伴</button>
+        <div class="seg-toggle" id="todoToggle" aria-label="未完成/全部切换">
+          <button class="seg-btn" id="btnTodoIncomplete" type="button">未完成</button>
+          <button class="seg-btn" id="btnTodoAll" type="button">全部</button>
+        </div>
       </div>
     </section>
     <section class="list-area">
@@ -545,7 +592,6 @@
     }
 
     function refreshHeader() {
-      $("boardPill").textContent = "打卡板：" + state.boardId;
       $("daysPill").textContent = "在一起 " + calcDays(state.startDate) + " 天";
       const done = Object.values(state.records).filter((x) => x.completed).length;
       $("progress").textContent = `${done} / ${LOVE_ITEMS.length}`;
@@ -568,7 +614,7 @@
         return `
           <article class="card ${done ? "done" : ""}" data-id="${id}">
             <div class="card-top">
-              <h3 class="card-title">${id}. ${escapeHtml(item)}</h3>
+              <h3 class="card-title">${escapeHtml(item)}</h3>
               <span class="tag">${getCategory(idx)}</span>
             </div>
             <div class="note-wrap">
@@ -682,11 +728,23 @@
       $("btnCancelAccessSettings").onclick = () => closeModal("modalAccessSettings");
       $("btnSaveStartDate").onclick = saveStartDate;
       $("btnCancelStartDate").onclick = () => closeModal("modalStartDate");
-      $("btnOnlyTodo").onclick = () => {
-        state.onlyTodo = !state.onlyTodo;
-        $("btnOnlyTodo").textContent = state.onlyTodo ? "显示全部" : "显示未完成";
+
+      $("btnTodoIncomplete").onclick = () => {
+        state.onlyTodo = true;
+        $("btnTodoIncomplete").classList.add("active");
+        $("btnTodoAll").classList.remove("active");
         renderCards();
       };
+      $("btnTodoAll").onclick = () => {
+        state.onlyTodo = false;
+        $("btnTodoAll").classList.add("active");
+        $("btnTodoIncomplete").classList.remove("active");
+        renderCards();
+      };
+
+      // 初始化选中态：默认显示全部（state.onlyTodo=false）
+      $("btnTodoAll").classList.toggle("active", !state.onlyTodo);
+      $("btnTodoIncomplete").classList.toggle("active", state.onlyTodo);
     }
 
     async function init() {
