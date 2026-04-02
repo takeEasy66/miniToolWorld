@@ -255,6 +255,18 @@
       resize: none;
       white-space: nowrap;
     }
+
+    /* 备注输入框聚焦（输入时）边框改为黄色 */
+    .note:focus {
+      outline: none;
+      border-color: #f4c542 !important;
+      box-shadow: 0 0 0 2px rgba(244, 197, 66, 0.18);
+    }
+
+    .note[readonly]:focus {
+      border-color: var(--border) !important;
+      box-shadow: none;
+    }
     .note-wrap {
       position: relative;
     }
